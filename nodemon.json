@@ -1,0 +1,11 @@
+{
+    "env":{
+        "ENV":"develpoment",
+        "JWT_KEY": "secret",
+        "PORT": "1237",
+        "SECERET_KEY": "BALLS",
+        "EMAIL": "bolu.bluesprint@gmail.com",
+        "PASS" : "18/52hA017",
+        "kafka": "docker-compose -f ./zk-single-kafka-single.yml up"
+    }
+}

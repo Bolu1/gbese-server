@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `users` MODIFY `pin` INTEGER NOT NULL DEFAULT 0,
+    MODIFY `profile` VARCHAR(191) NOT NULL DEFAULT '';

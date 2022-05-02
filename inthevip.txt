@@ -1,0 +1,12 @@
+// # Environment variables declared in this file are automatically made available to Prisma.
+// # See the documentation for more detail: https://pris.ly/d/prisma-schema#accessing-environment-variables-from-the-schema
+
+// # Prisma supports the native connection string format for PostgreSQL, MySQL, SQLite, SQL Server, MongoDB and CockroachDB (Preview).
+// # See the documentation for all the connection string options: https://pris.ly/d/connection-strings
+
+// DATABASE_URL="mysql://guest:1234@localhost:3306/nest?schema=public"
+// JWT_SECRET="Ballz"
+
+
+
+// <!-- mysql://bb01b2a6e3dc61:ef559c4c@us-cdbr-east-05.cleardb.net/heroku_68c8069c5fe365f?reconnect=true -->
