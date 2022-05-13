@@ -14,7 +14,11 @@ export class EditUserDto {
 
     @IsString()
     @IsOptional()
-    accountName?: string
+    phone?: string
+
+    @IsString()
+    @IsOptional()
+    profile?: string
 }
 
 export class EditPasswordDto {

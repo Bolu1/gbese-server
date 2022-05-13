@@ -4,6 +4,7 @@ import { GetUser } from 'src/auth/decorator';
 import { InitPaymentDto } from './dto';
 import { PaymentService } from './payment.service';
 import { JwtGuard } from '../auth/guard'
+import { User } from '@prisma/client';
 
 @UseGuards(JwtGuard)
 @Controller('payment')
@@ -33,8 +34,9 @@ export class PaymentController {
     @Post('withdraw')
     withdraw(
         @Body('account') accountNumber:any,
-        @Body('amount') amount:any
+        @Body('amount') amount:any,
+        @GetUser() user:User
     ){
-        return this.paymentService.resolve(accountNumber, amount)
+        return this.paymentService.resolve(accountNumber, amount, user)
     }
 }

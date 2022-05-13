@@ -22,6 +22,7 @@ import { ConsumerService } from 'src/kafka/consumer.service';
 import { ProducerService } from 'src/kafka/producer.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MailService } from 'src/mail/mail.service';
+import { User } from '@prisma/client';
 var s = false;
 var a,
   b = 0;
@@ -42,33 +43,27 @@ export class PaymentService implements OnModuleInit {
     email: string,
     accountNumber: number,
   ) {
-    try {
-      const form = {
-        amount: amount,
-        email: email,
-        metadata: {
-          amount: amount,
-          message: message,
-          debitorAccount: accountNumber,
-          creditorAccount: 'test',
+    try{
+    const {data} = await axios.post('https://api.paystack.co/transaction/initialize', {
+      amount:amount*100,
+      email:email,
+      metadata:{
+        amount: amount*100,
+        message: message || '',
+        debitorAccount: accountNumber,
+        creditorAccount: 'test',
+      }
+    },{
+        headers: {
+          Authorization:
+            'Bearer sk_test_530cc30f2989b68e407c5f8997ee137e23ab40ef',
+            'Content-Type': 'application/json'
         },
-      };
-
-      form.amount *= 100;
-
-      initializePayment(form, (error, body) => {
-        if (error) {
-          //handle errors
-          console.log(error);
-          throw error;
-          // return;
-        }
-        const response = JSON.parse(body);
-        console.log(response.data.authorization_url);
-        return { url: response.data.authorization_url };
       });
-    } catch (error) {
-      throw error;
+
+    return data.data.authorization_url
+    }catch(error){
+      console.log(error)
     }
   }
 
@@ -86,6 +81,8 @@ export class PaymentService implements OnModuleInit {
     try {
       if (s == false) {
         s = false;
+        a = 0;
+        b = 0;
         throw new ForbiddenException('Forbidden');
       } else {
         const message = `<b>Your deposit of ${a} was successful your balanace is ${b}</b>`;
@@ -117,8 +114,8 @@ export class PaymentService implements OnModuleInit {
             });
             if (exists[0]) {
               //  throw new ForbiddenException('Cannot process transaction more than once')
+              console.log("No")
               return (s = false);
-              // console.log("No")
             }
             console.log(ref, ' Pay');
             verifyPayment(ref, async (error, body): Promise<any> => {
@@ -129,16 +126,18 @@ export class PaymentService implements OnModuleInit {
                 throw new Error('coul error');
               }
               const response = JSON.parse(body);
+              console.log(response)
               if (!response.status) {
+                console.log("hee")
                 return (s = false);
               }
               const mdata = response.data.metadata;
               const transaction = await this.prisma.transaction.create({
                 data: {
                   successful: true,
-                  amount: parseInt(mdata.amount),
-                  debitorAccount: mdata.debitorAccount,
-                  creditorAccount: '0',
+                  amount: parseInt(mdata.amount)/100,
+                  creditorAccount: mdata.debitorAccount,
+                  debitorAccount: '0',
                   message: mdata.message,
                   ref: ref,
                 },
@@ -152,7 +151,8 @@ export class PaymentService implements OnModuleInit {
                 },
               });
               const balance = user[0].balance;
-              const total = balance + parseInt(mdata.amount);
+              const am = parseInt(mdata.amount)/100
+              const total = balance + am;
               const uu = await this.prisma.user.update({
                 where: {
                   accountNumber: parseInt(mdata.debitorAccount),
@@ -161,7 +161,7 @@ export class PaymentService implements OnModuleInit {
                   balance: total,
                 },
               });
-              a = parseInt(mdata.amount);
+              a = am;
               b = total;
               return (s = true);
             });
@@ -173,8 +173,9 @@ export class PaymentService implements OnModuleInit {
     );
   }
 
-  async resolve(accountNumber: any, amount: any) {
+  async resolve(accountNumber: any, amount: any,user:User) {
     let cachedItem = await this.cacheManager.get('banks');
+    if(amount > user.balance) throw new BadRequestException('Insufficient funds');
     if (!cachedItem) {
       const response = await axios.get('https://api.paystack.co/bank', {
         headers: {
@@ -206,48 +207,65 @@ export class PaymentService implements OnModuleInit {
     // console.log(response1)
     const det = response1.data.data;
 
-    const payload = {
-      type: 'nuban',
-      name: det.account_name,
-      account_number: accountNumber,
-      bank_code: bank.code,
-      isCurrency: 'NGN',
-    };
-    const recipient = await axios.post(
-      `https://api.paystack.co/transferrecipient`,
-      payload,
-      {
-        headers: {
-          Authorization:
-            'Bearer sk_test_c12b45c4a24b3f2822dc455384aae998665807ea',
-          'Content-Type': 'application/json',
-        },
+    const trans = await this.prisma.transaction.create({
+      data: {
+        successful: true,
+        amount: parseInt(amount),
+        creditorAccount: '0',
+        debitorAccount: user.accountNumber.toString(),
+        message: 'to bank',
+        ref: "",
       },
-    );
-    const rec = recipient.data.data.recipient_code;
-    const a = parseInt(amount);
+    });
 
-    const payload2 = {
-      source: 'balance',
-      amount: a,
-      recipient: rec,
-      reason: 'withdrawal from gbese',
-    };
+    if(!trans){
+      throw new ForbiddenException('Forbidden');
+    }
 
-    console.log(payload2);
+    const total = user.balance - parseInt(amount)
 
-    const response2 = await axios.post(
-      `https://api.paystack.co/transfer`,
-      payload2,
-      {
-        headers: {
-          Authorization:
-            'Bearer sk_test_c12b45c4a24b3f2822dc455384aae998665807ea',
-          'Content-Type': 'application/json',
-        },
-      },
-    );
+    // const payload = {
+    //   type: 'nuban',
+    //   name: det.account_name,
+    //   account_number: accountNumber,
+    //   bank_code: bank.code,
+    //   isCurrency: 'NGN',
+    // };
+    // const recipient = await axios.post(
+    //   `https://api.paystack.co/transferrecipient`,
+    //   payload,
+    //   {
+    //     headers: {
+    //       Authorization:
+    //         'Bearer sk_test_c12b45c4a24b3f2822dc455384aae998665807ea',
+    //       'Content-Type': 'application/json',
+    //     },
+    //   },
+    // );
+    // const rec = recipient.data.data.recipient_code;
+    // const a = parseInt(amount);
 
-    console.log(response2);
+    // const payload2 = {
+    //   source: 'balance',
+    //   amount: a,
+    //   recipient: rec,
+    //   reason: 'withdrawal from gbese',
+    // };
+
+    // console.log(payload2);
+
+    // const response2 = await axios.post(
+    //   `https://api.paystack.co/transfer`,
+    //   payload2,
+    //   {
+    //     headers: {
+    //       Authorization:
+    //         'Bearer sk_test_c12b45c4a24b3f2822dc455384aae998665807ea',
+    //       'Content-Type': 'application/json',
+    //     },
+    //   },
+    // );
+
+    // console.log(response2);
   }
 }

@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, OnModuleInit } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { ConsumerService } from 'src/kafka/consumer.service';
 import { ProducerService } from 'src/kafka/producer.service';
@@ -30,8 +30,9 @@ export class TransactionService{
       const am = parseInt(dto.amount)
 
       //checks
+      if(parseInt(dto.accountNumber) == user.accountNumber) throw new BadRequestException('You cant send funds to your self');
       if(!recepient) throw new BadRequestException('Recepient does not exsist');
-      if (!pwMatch) throw new BadRequestException('Pin not correct');
+      if (!pwMatch) return false;
       if(am > user.balance) throw new BadRequestException('I\'m afraid you don\'t have the funds for that big man');
 
       //update ledger first
@@ -76,6 +77,26 @@ export class TransactionService{
     }
     
 
+  }
+
+  async history(user){
+
+    const transaction  = await this.prisma.transaction.findMany({
+        where:{
+          OR:[
+            {
+              debitorAccount: user.accountNumber.toString()
+            },
+            {
+              creditorAccount: user.accountNumber.toString()
+            }
+          ]
+        },
+        orderBy: {
+            id: 'desc',
+        }
+    })
+    return transaction
   }
 
 }

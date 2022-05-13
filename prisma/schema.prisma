@@ -23,6 +23,7 @@ model User {
 
   firstName String
   lastName String
+  phone String
 
   pin String @default(" ") 
   profile String @default(" ")

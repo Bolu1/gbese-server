@@ -55,6 +55,7 @@ export class AuthService {
           confirmed: false,
           pin: hash,
           recipient_code: " ",
+          phone: dto.phone,
         },
       });
 
@@ -63,7 +64,7 @@ export class AuthService {
         }
 
       const token = await this.signMail(user.email, user.id)
-      const url = `http://localhost:8000/auth/confirm/${token}`
+      const url = `http://localhost:3000/verification/registration/${token}`
       const message = `<b>welcome click this suspious looking link to confirm your email ${url}</b>`
       await this.mailService.sendMail(dto.email, message)
       delete user.pin
@@ -94,11 +95,21 @@ export class AuthService {
       throw new ForbiddenException('Credentails Incorrect');
     }
 
-    // if(!user.confirmed){
-    //   throw new UnauthorizedException('Confrim your email')
-    // }
+    if(!user.confirmed){
+      throw new UnauthorizedException('Confrim your email')
+    }
 
-    return this.signToken(user.id, user.email, user.balance, user.accountName, user.accountNumber, user.firstName, user.lastName);
+    const token =  await this.signToken(user.id, user.email, user.balance, user.accountName, user.accountNumber, user.firstName, user.lastName);
+    const data = {
+      token,
+      email: user.email,
+      number: user.accountNumber,
+      name: user.accountName,
+      profile: user.profile,
+      fn: user.firstName,
+      ln: user.lastName
+    }
+    return data
   }
 
   async forgotPassword(email:string){
@@ -139,7 +150,7 @@ export class AuthService {
     });
   }
 
-  signToken(userId: any, email: string, balance:any, accountName:any, accountNumber:any, firstName, lastName): Promise<string> {
+  async signToken(userId: any, email: string, balance:any, accountName:any, accountNumber:any, firstName, lastName): Promise<string> {
     const payload = {
       sub: userId,
       email,
@@ -150,10 +161,11 @@ export class AuthService {
       lastName
     };
 
-    return this.jwt.signAsync(payload, {
+    const t = await this.jwt.signAsync(payload, {
       expiresIn: '30d',
       secret: this.config.get('JWT_SECRET'),
     });
+    return t
   }
   GET
   async confirm(userId){

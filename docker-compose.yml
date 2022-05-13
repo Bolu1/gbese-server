@@ -1,5 +1,40 @@
-version: '3'
+version: '3.8'
 services:
+  dev:
+    container_name: nestjs_api_dev
+    image: nestjs-api-dev:1.0.0
+    build:
+        context: .
+        target: development
+        dockerfile: ./Dockerfile
+    command: npm run start:debug
+    ports:
+        - 3000:3000
+        - 9229:9229
+    networks:
+        - nesjs-network
+    volumes:
+        - .:/usr/src/app
+        - /usr/src/app/node_modules
+    restart: unless-stopped
+  prod:
+    container_name: nestjs_api_prod
+    image: nestjs-api-prod:1.0.0
+    build:
+        context: .
+        target: production
+        dockerfile: ./Dockerfile
+    command: npm run start:prod
+    ports:
+        - 3000:3000
+        - 9229:9229
+    networks:
+        - nesjs-network
+    volumes:
+        - .:/usr/src/app
+        - /usr/src/app/node_modules
+    restart: unless-stopped
+
   zookeeper:
     image: 'bitnami/zookeeper:latest'
     ports:
@@ -19,3 +54,32 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
+  mysql: 
+    container_name: myapp_mysql
+    restart: always
+    image: mysql:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=myapp
+      - MYSQL_PASSWORD=myapp
+      - MYSQL_DATABASE=myapp_docker
+    ports:
+    - "3308:3306"
+    volumes:
+    - myapp_mysql_data:/var/lib/mysql
+  redis:
+    container_name: myapp_redis
+    restart: always
+    image: redis:6.0-alpine
+    expose:
+      - "6379"
+    volumes:
+      - myapp_redis_data:/data
+volumes:
+  myapp_mysql_data:
+  myapp_redis_data:
+
+networks:
+  default:
+    external:
+      name: myapp

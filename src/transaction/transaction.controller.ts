@@ -23,5 +23,12 @@ export class TransactionController {
         ){
           return this.transactionService.transfer(user, dto)
         }
+
+        @Get('history')
+        history(
+          @GetUser() user:User
+        ){
+          return this.transactionService.history(user)
+        }
     
 }

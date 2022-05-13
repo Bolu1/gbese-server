@@ -6,5 +6,6 @@ export class InitPaymentDto {
     amount: string
 
     @IsString()
+    @IsOptional()
     message: string
 }

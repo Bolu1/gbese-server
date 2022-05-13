@@ -20,19 +20,27 @@ export class UserService {
               private jwt: JwtService,
     ) {}
 
-  async editUser(userId: any, dto: EditUserDto) {
-    const user = await this.prisma.user.update({
+  async editUser(user: any, dto: EditUserDto) {
+    const payload ={
+      firstName: dto.firstName || user.firstName,
+      lastName: dto.lastName || user.lastName,
+      phone: dto.phone || user.phone,
+      profile: dto.profile || user.profile
+    }
+
+    const user0 = await this.prisma.user.update({
       where: {
-        id: userId,
+        id: user.id,
       },
       data: {
-        ...dto,
+        ...payload,
       },
     });
-    delete user.pin
-    delete user.hash;
+    delete user0.pin
+    delete user0.hash;
 
-    return user;
+
+    return user0;
   }
 
   async editPassword(userId: any, password: any, newPassword: any) {
@@ -176,6 +184,22 @@ export class UserService {
         return "Mail sent"
     }catch(error){
       console.log(error)
+      throw error
+    }
+  }
+
+  async getName(accountNumber){
+    try{
+      const user = await this.prisma.user.findMany({
+        where: {
+          accountNumber: accountNumber
+        },
+      });
+      if(user.length == 0){
+        throw new BadRequestException('User does not exist')
+      }
+      return user[0].accountName
+    }catch(error){
       throw error
     }
   }

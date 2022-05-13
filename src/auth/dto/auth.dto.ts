@@ -17,7 +17,11 @@ export class AuthDto{
 
     @IsString()
     @IsNotEmpty()
-    lastName: string
+    lastName: string;
+
+    @IsString()
+    @IsNotEmpty()
+    phone: string;
 }
 
 export class SigninDto{

@@ -20,6 +20,13 @@ export class UserController {
         return user
     }
 
+    @Post('getName')
+    getName(
+        @Body('account') accountNumber: any
+    ){
+        return this.userService.getName(accountNumber)
+    }
+
     @Get(':id')
     getUser(
         @GetUser() user:User,
@@ -30,9 +37,9 @@ export class UserController {
 
     @Patch('edit')
     editUser(
-        @GetUser('id') userId: any,
+        @GetUser() user: any,
         @Body() dto: EditUserDto){
-            return this.userService.editUser(userId, dto)
+            return this.userService.editUser(user, dto)
         }
 
     @Patch('editPassword')
